@@ -1,0 +1,61 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+\chapter{Introduction}\label{intro}
+Many real-life problems can be modelled as some form of sequential reasoning.
+Even the single-agent models have usage in a wide spectrum of applications, the main areas being agriculture, adjusting production to demand, finances, etc. \cite{mdp_applications}.
+Other examples, where some information is hidden from some agents, include autonomous robotics, networking and marketing \cite{pomdp_applications}.
+
+Even more interesting are the environments consisting of multiple rational independent agents competing or cooperating with each other to reach their own goals.
+The formalisms modelling these types of environments are called \textit{games} and are studied by the \textit{game theory}.
+However, due to the multiple agents, it is not as straightforward to define a solution of a game-theoretical problem and hence various different solution concepts are used.
+Equilibria are the most known solution concepts, the most famous being \textit{Nash equilibrium}.
+Moreover, the agents often need to randomize their decisions to behave optimally, which is not necessary in the single-agent environments.
+This enlarges the size of the search space from finite to infinite.
+These two aspects make solving games much harder than sequential decision problems containing only a single agent.
+
+The game theory was founded by John von Neumann as a method of economy, with the well-known \textit{oligopoly game}, product pricing methods and various number of other means of studying behaviour of competing agents in an economic environment.
+A specific example is designing market trading strategies by using the tools of the game theory \cite{games_market_trading}.
+However, the game theory encompasses many more fields of application than economy.
+For example biology \cite{games_bio}, machine (deep) learning \cite{games_deeplearning}, computer security, where a more concrete example being \textit{Attacker Defender model for Intrusion Detection Systems in Cloud} \cite{games_cloud} and even the recently popular blockchain \cite{games_blockchain}.
+
+The game theory already provides means and methods find optimal strategies or other solution concepts for the tasks mentioned above, but these methods usually have drawbacks which are listed in the next part.
+
+\section{Complications of existing methods}\label{intro:compilcations}
+As it was said, there already exists some algorithm or method which is proven to be capable of finding the solution for each of the problems and models listed above.
+Unfortunately, these proofs work in the theoretical sense but in practice, many of these methods do not scale very well for very large instances as its demand for either space or time grows rapidly.
+In the case of multiagent sequential reasoning, which is the sole topic in this thesis, these methods often require linear programming.
+
+For single-agent or even multiagent environments, where all agents have perfect information, this is not an issue as the linear programs do not grow in size as quickly and the problem is generally easier to solve.
+But when the perfect information is even partly removed, for example in \textit{partially observable Markov decision processes} and \textit{partially observable stochastic games}, these mathematical programs grow larger and take longer to solve.
+
+In practice, the methods using solely the approach of linear programming are unusable for large problems, and thus approximative approaches had to be devised.
+One of these approximative methods, which is the cornerstone of this thesis, is the \textit{Heuristic search value iteration} first introduced for POMDPs in \cite{hsvi} and then proposed for one-sided partially observable stochastic games in \cite{osposgs}.
+The latter is the main source of inspiration behind this thesis as it introduces the OS-POSG model and presents the solving HSVI algorithm with proof of convergence.
+
+This presented method, however, also uses many linear programs, and thus it is possible to improve its scalability.
+Hence, some other method than linear programming is needed to drive the search in the correct direction.
+This thesis focuses on multi-armed bandit algorithms \cite{bandits} as one of the most important reinforcement learning tools, which can provide this needed type of search by learning the properties of the environment by a repeated interaction.
+
+\section{Goals of the thesis}\label{intro:goals}
+In this bachelor thesis, we introduce the reader into the problematics of sequential decisions with single or multiple agents, summarize the existing methods for solving such problems and discuss their properties.
+We state why some solution methods are not suitable for practical use and what are their main disadvantages.
+Then, we describe the concept of the multi-armed bandit algorithms and how they could be used to remove some problems in the standard algorithms.
+
+We aim to incorporate the surveyed multi-armed bandit algorithms, which are meaningful in the context of games, particularly stochastic games and partially observable stochastic games, into the existing algorithms and investigate their behaviour.
+The goal is to realize, which of them possess properties sufficient to make the enwrapping algorithm find the optimal solution or at least a good approximation, and how quickly and reliably they discover the solution.
+The result of this thesis is a comparison of individual multi-armed bandits supported by experimental evaluation of the algorithms on domains of (partially observable) stochastic games.
+The best found bandit algorithms and their settings are highlighted and summarized.
+Also, the output is also a modification of an existing algorithm, which does not rely on linear programming as heavily as the original method.
+
+In addition to the assignment of this thesis, where only the class of partially observable stochastic games is stated, we first focus more on the fully observable stochastic games and comparison of the bandits on this problem.
+The class of partially observable stochastic games is a harder problem than the stochastic games, mainly because of the uncertainty about the current state of the environment which makes the search space infinite rather than finite.
+Due to the infinite size, the so-called \textit{belief} space needs to be discretized thus allowing us to approximate the space with large but finite number of elements, in this case finite number of bandits, but introducing another imprecision into the process.
+
+Because of this increased difficulty it is reasonable to thoroughly compare the bandit algorithms on the easier domain and then proceed with investigating the differences which arise in the harder partially observable problem.
+Once we understand how to bandits behave in the finite dimension, the transition to the harder problem is smoother as some assumptions can be made in advance.
+
+The comparisons are the most important part of the thesis and conclude the main body of this text.
+Last, we summarize the thesis and the results achieved by the experimental evaluation together with proposal of future work.
+In the appendices, a more detailed comparison of the multi-armed bandits is presented together with time analysis and implementation details of the used algorithms.
+\end{document}

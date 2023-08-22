@@ -1,0 +1,399 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+\chapter{Technical background}\label{bg}
+In this chapter, we provide a theoretical ground which is essential for the rest of the thesis.
+First, we describe basic models for single-agent environments as a foundation of sequential reasoning.
+Then, we use these notions to define fundamental concepts of game theory with a focus on game types studied in later chapters.
+
+Definitions and terms in this chapter are based mainly on two textbooks, namely \textit{Artificial Intelligence: A Modern Approach}\cite{aima} and \textit{Multiagent Systems: Algorithmic, Game-Theoretic and Logical Foundations}\cite{multiagent}.
+
+In the next two sections, we consider environments consisting of a single agent.
+We define the agent's goals and discuss the agent's means to behave optimally and reach the goals.
+
+\section{MDP}\label{bg:mdp}
+The most basic tool for modelling sequential reasoning is the \textit{Markov decision process}, abbreviated as MDPs.
+An MDP describes how a single agent moves through different states of the environment by choosing actions in discrete time steps.
+After each step, the agent receives a real \textit{reward} from the environment and stores it.
+The agent aims to maximize this accumulated quantity over time.
+
+MDPs generally model \textit{stochastic} environments, which means that changes among states are (sometimes partly) randomized, so one action can possibly lead to more than one state with non-zero probability.
+In the special case, when all probabilities in the transition function are either 0 or 1, we say that the MDP is \textit{deterministic}.
+The agent's information, however, is perfect, so he knows precisely his current state and actions that can be played.
+When properties of the MDP do not change in time, it is called \textit{stationary}, otherwise \textit{non-stationary}.
+
+\begin{definition}\label{bg:mdp:def}
+    A Markov decision process is a tuple $\left(S, A, T, R\right)$, where:
+    \begin{itemize}
+        \item $S$ is a set of possible states,
+        \item $A$ is a set of actions,
+        \item $T(\news \mid s, a)$ is a conditional probability of transitioning from state $s \in S$ to state $\news \in S$ when action $a \in A$ is played,
+        \item $R(s)$ is an immediate reward function.
+    \end{itemize}
+\end{definition}
+
+In an MDP, there is a very important notion of so-called \textit{Markov property}\label{bg:mdp:markprop}.
+This property states, that the outcome depends only on the current state and the chosen action.
+In other words, the actions played before the current state have no effect on the next state.
+
+In each time step, the agent, which is currently in state $s$, selects an action $a$ and according to the transition function $T$ moves to state $\news$ and receives \textit{immediate reward} $r$ based on the reached state.
+MDPs can have either finite or infinite horizon.
+In the case of the finite horizon, we can use \textit{additive rewards}, where all are summed together to form \textit{utility}.
+When the time horizon is infinite, we typically use $0 < \gamma < 1$ as the discount factor and compute utility as \textit{discounted rewards}.
+Universally, additive rewards can be defined as discounted rewards only with $\gamma = 1$.
+The discount factor is used to multiply the received reward in an increasing manner as the play continues to the next time steps.
+The resulting discounted reward is then computed as
+\begin{equation}\label{bg:mpd:disc}
+    R(\gamma) = \sum_{t = 0}^{n}\gamma^t r_t.
+\end{equation}
+
+A \textit{policy} $\pi$ describes how the agent selects actions.
+It is mapping $\pi: S \to A$, and $\pi(s)$ returns the preferred action to be played in state $s$.
+If the agent follows an optimal policy $\pi^*$, it will receive maximal possible \textit{expected reward} or, in other words, utility.
+Based on the situation, it can be computed as the additive rewards, discounted rewards or even average rewards.
+
+\section{POMDP}\label{bg:pomdp}
+The partially observable Markov decision process, abbreviated as POMDP, is a generalization of an MDP.
+In contrast with an MDP, the agent has \textit{imperfect} information about the states of the environment, i.e. does not know in which state he currently is and also to which state he transitioned.
+To capture this modification, we have to add two new concepts to the definition of MDP \refdef{bg:mdp:def}.
+
+\begin{definition}\label{bg:pomdp:def}
+    A partially observable Markov decision process is a tuple $\left(S, A, O, T, R, Z, b\right)$, where:
+    \begin{itemize}
+        \item $S$ is a set of possible states,
+        \item $A$ is a set of actions,
+        \item $O$ is a set of observations,
+        \item $T(\news \mid s, a)$ is a conditional probability of transitioning from state $s \in S$ to state $\news \in S$ when action $a \in A$ is played,
+        \item $R(s)$ is an immediate reward function,
+        \item $Z(o \mid \news, a)$ is a conditional probability of generating observation $o \in O$ when the agent transitioned to state $\news \in S$ while playing action $a \in A$,
+        \item $b \in \Delta(S)$ is a probability over states called initial belief.
+    \end{itemize}
+\end{definition}
+
+The first new concept is \textit{observations} $o \in O$, which are generated when transitioning to a new state and then published.
+The agent can deduce some information about the change that occurred and use it, but it can be inaccurate or wrong.
+
+The second new element is \textit{belief} $b \in \Delta(S)$.
+Because the current state is not revealed to the agent by the environment, he keeps a probability distribution over states $b \in \Delta(S)$.
+This distribution $b$ represents the agent's knowledge about its current state.
+The agent starts from some \textit{initial belief} and updates it with incoming observations as follows.
+\begin{equation}\label{bg:pomdp:beliefupdate}
+    b^{\prime}(\news) = \mu Z(o \mid \news, a)\sum_{s \in S}T(\news \mid s, a)b(s)
+\end{equation}
+where $\mu$ is a normalizing factor so that $b^{\prime}$ is a distribution.
+Belief assigns a probability to each state $s \in S$ and thus forms a $|S|$-$simplex$, where $|S|$ is the number of states.
+
+As opposed to the MDPs, here the optimal behaviour does not depend on the real state of the agent, but rather on his belief about his state.
+Thanks to this, we can formulate POMDP as an MDP over belief points instead of states.
+However, the number of these states would be infinite and thus intractable for solution methods for MDPs.
+
+Even though the methods originally used for MDPs are unusable, there are some modifications that help to overcome these complications.
+We leverage the fact, that there is a finite number of possible actions in an POMDP and define \textit{$\alpha$-vectors}.
+An $\alpha$-vector\cite{avectors} is a linear function $\alpha : \simplex{S} \to \mathbb{R}$ and is conveniently represented as values $\alpha(s)$ in each of the vertices $s \in S$ of the belief simplex and thus forming a hyperplane in the belief space.
+Then value $\alpha(s)$, where $s \in S$, directly represents a value of an $n$-step policy conditioned by the starting state $s$.
+The conditionality follows from the agent's uncertainty about the current state, but the dependence on belief is linear.
+Thus, a value of the $\alpha$-vector in a specific belief point $b \in \simplex{S}$ is then computed as a convex combination of the $\alpha$-vector's corner values
+\begin{equation}\label{bg:pomdp:alphavector}
+    \alpha(b) = \sum_{s \in S}b(s)\alpha(s).
+\end{equation}
+This notion of $\alpha$-vectors will be essential in the standard solution methods for POMDPs \refsec{standard:pomdp} and more importantly for tackling the partially observable stochastic games \refsec{standard:osposg}.
+
+\section{Game theory}\label{bg:g}
+MDPs and POMDPs provide formalisms for modelling and solving environments where only one agent is present.
+However, many real-world situations contain multiple independent agents.
+These problems are modelled by the \textit{game theory}.
+
+The game theory includes various game types.
+They differ in the number of players, time horizons, utility functions, whether the agents compete or cooperate and in other aspects.
+From now on, we will focus on strictly competitive games.
+
+\subsection{Basic concepts}\label{bg:g:basics}
+In the next parts, the fundamental principles of the game theory are explained.
+After that we will look into a specific subset of games with greater detail.
+
+\subsubsection{Players}\label{bg:g:basics:players}
+In the game theory, agents are called \textit{players} and there can be an arbitrary number of them, as long as there is more than one.
+The convention is, that when we look at the game from the perspective of player $i$, then the other players are denoted together by $-i$ and are called \textit{adversaries} or \textit{opponents}.
+In the rest of this thesis, we will consider only two-player games and thus $-i$ denotes only one adversary.
+
+\subsubsection{Rewards}\label{bg:g:basics:rewards}
+There exist many distinct types of games in terms of rewards or, as sometimes termed, payoffs or utilities.
+For example, \textit{common-payoff} games have equal rewards for all players and action profiles.
+\textit{Action profile} is a subset of the Cartesian product of the action sets of individual players, i.e. $a = (a_1, ..., a_n)$, where $a_i \in A_i$.
+We will focus on \textit{zero-sum} games (only two-player), which have a property that the reward of player $i$ means the same reward for the player $-i$ only multiplied by $-1$.
+
+\subsubsection{Strategies}\label{bg:g:basics:strategies}
+In single-agent environments, we worked with policies to describe the agent's behaviour.
+In games, the term \textit{strategies} is used.
+We distinguish two types of strategies, \textit{pure} and \textit{mixed}.
+A player following pure strategies selects just one action in each state and plays it with probability $1$.
+In contrast, in mixed strategies a player follows a distribution over actions and plays each of them with probability $\leq 1$.
+A strategy profile is a subset of the Cartesian product of the sets of all mixed strategies of each individual player
+\begin{equation}\label{bg:g:basics:strategies:profiles}
+    s = (s_1, \dots, s_n) \in \simplex{A_1} \times \cdots \times \simplex{A_n}.
+\end{equation}
+Actions, that are played with probability $> 0$ in a strategy $s$, are called \textit{support} of a mixed strategy $s$.
+The expected utility of player $i$ under mixed strategy profile $s$ is then computed as
+\begin{equation}\label{bg:g:basics:strategies:util}
+    u_i(s) = \sum_{a \in A}u_i(a)\prod_{j = 1}^{n}s_j(a_j),
+\end{equation}
+where $A$ is the set of all actions and $u_i(a)$ is an assignment of utility to action $a \in A$.
+
+\subsubsection{Nash Equilibrium}\label{bg:g:basics:nash}
+In game theory, there are many notions of equilibria, but probably the most important is \textit{Nash equilibrium}\cite{nash}, which describes how players play optimally in an $n$-player game.
+Nash Equilibrium is a stable strategy profile for which it holds, that none of the players wants to deviate from his (possibly mixed) strategy because it would decrease its payoff.
+More formally, for every player holds, that his strategy $s_i$ is the \textit{best response} to the strategy profile of the remaining players $s_{-i}$.
+The overall strategy profile of all players in the game is then denoted as $s = (s_i, s_{-i})$.
+The best response to a strategy is such a strategy, that gains the same or better payoff, than any other player's strategy.
+\begin{definition}\label{bg:g:basics:nash:bestresponse}
+    Player $i$'s best response to strategy profile $s_{-i}$ is a mixed strategy $s_i^* \in S_i$, for which holds that
+    \begin{equation}
+        u_i(s_i^*, s_{-i}) \geq u_i(s_i, s_{-i}) \qquad \forall s_i \in S_i.
+    \end{equation}
+\end{definition}
+Nash proved that in every game with a finite number of players and action profiles exists at least one Nash Equilibrium\cite{nash}.
+
+\subsubsection{Minimax theorem}\label{bg:g:basics:minimax}
+There are two special strategies and values, \textit{minmax} and \textit{maxmin}, which are then linked together with the \textit{Minimax theorem}\cite{minimax}.
+Here, we restrict only to two-player zero-sum games, even though maxmin is defined for a more general setting.
+
+Maxmin strategy is such a strategy, that maximizes the worst possible reward for a player following a strategy profile $s_i$.
+\begin{definition}\label{bg:g:basics:minimax:maxmin}
+    The maxmin value for a player $i$ is
+    \[
+        \max_{s_i} \min_{s_{-i}} u_i(s_i, s_{-i})
+    \]
+\end{definition}
+To obtain the strategy instead of value, the $\max$ changes to $\argmax$.
+In other words, a player is guaranteed to obtain at least its maxmin value, when following strategy $s_i$, but the final payoff can be even higher.
+
+On the other hand, minmax strategy wants to force the adversary to receive the worst possible value even when playing optimally.
+This can be viewed as trying to punish the other as much as possible without considering its own reward.
+\begin{definition}\label{bg:g:basics:minimax:minmax}
+    The minmax value for a player $i$ is
+    \[
+        \min_{s_i} \max_{s_{-i}} u_{-i}(s_i, s_{-i})
+    \]
+\end{definition}
+According to von Neumann's Minimax theorem, these two values coincide for two-player zero-sum games.
+\begin{theorem}\label{bg:g:basics:minimax:minimax}
+    (\textbf{von Neumann}\cite{minimax}) In any finite two-player zero-sum game, in any Nash Equilibrium, each player receives a payoff that is equal to both its minmax and maxmin values.
+\end{theorem}
+The maxmin value is thus equal to the minmax value, we call this value \textit{the value of the game}.
+Strategies forming these values are then automatically Nash equilibria.
+
+\subsubsection{Game forms}\label{bg:g:basics:forms}
+Games can be defined in many forms each representing different views.
+The most general and fundamental is \textit{normal-form} and most other representations can be reduced to it.
+\begin{definition}\label{bg:g:basics:forms:normal}
+    A finite n-player normal-form game is a tuple $\left(N, A, u\right)$, where
+    \begin{itemize}
+        \item $N$ is a set of $n$ players,
+        \item $A = A_1 \times \cdots \times A_n$, where $A_i$ is a finite set of actions available to player $i$,
+        \item $u = (u_1, \dots, u_n)$, where $u_i$ is a real-valued mapping $u_i : A_i \to \mathbb{R}$ for player $i$.
+    \end{itemize}
+\end{definition}
+Players' utilities are written into an $n$-dimensional matrix, where $n$ is the number of players.
+In each matrix cell representing one possible outcome, there is a vector of utility values for players.
+The vector has a length $n$ and the cells in each dimension $i$ are marked by possible actions for a player $i$.
+This representation is very convenient but quite ineffective as the size grows exponentially.
+Moreover, when reduced from other forms, the size grows even bigger.
+
+Normal-form representation does not explicitly consider the concept of time.
+In normal-form games, all agents act \textit{simultaneously} and independently on each other's actions.
+When time plays a major role in the environment, we use the \textit{extensive form}.
+
+The extensive form can be visualized as a tree, often called \textit{the game tree} and this way implies the notion of time.
+For each node in the tree a player, which takes actions in this round, is assigned together with available actions.
+Depending on the selected action in each round, the state of the game transitions to one of the children of the current node and another player gets to act.
+The sequence of these selected actions is called a \textit{history}.
+The game can be solved by solving subgames and applying backwards induction to find the Nash Equilibrium, one of the used algorithms being minimax with $\alpha\beta$ pruning for two-player zero-sum games.
+
+If the extensive-form game is of \textit{perfect information}, every player knows exactly in what state it is currently in and a pure strategy Nash Equilibrium exists\cite{zermelo}.
+A more general concept is a game with \textit{imperfect information}, which better represents real applications and where the agent cannot distinguish between some states.
+Sets of these equivalent states are called \textit{information sets} and available actions are not defined for individual states but rather for these information sets.
+When we consider imperfect information games, we assume that they are games of \textit{perfect recall}, meaning that even though the player does not know in what state he is, he perfectly remembers all his previous taken actions.
+
+Games can be played only once, multiple times or infinitely many times. These are called \textit{repeated games}.
+In the case of infinitely repeated games, we have to employ either average rewards or discounted rewards.
+In the next section, we will introduce a generalization of repeated games, which is also a generalization of POMDPs.
+
+\section{Stochastic games}\label{bg:sg}
+In previous section \refsec{bg:g}, we laid out basic concepts of the game theory.
+In this section, we define a class of games that generalize the (partially observable) Markov decision process for more than one agent as well as repeated games.
+This class is known as \textit{stochastic games}, \textit{Markov games} or even shortly \textit{SG}s.
+We discuss some important properties, which will be useful later in the partially observable variant.
+Last, methods that provide solutions for two-player, zero-sum stochastic games are presented and compared.
+
+\subsection{Definition}\label{bg:sg:def}
+In a stochastic game, players repeatedly play normal form games drawn from some finite set.
+These games are usually called \textit{stage games}.
+After each stage, players receive rewards based on the outcome of the normal form game and then proceed to the next stage by drawing a new game from the set.
+The probability of drawing this new game from the set depends solely on the previous game and the action profile selected by the players, which is analogic to the \textit{Markov property}.
+It is clear, that with only one agent present the stochastic game reduces to an MDP.
+
+Another perspective on stochastic games is that players move together through a finite set of states.
+In each state, all of them select an action to play and depending on these actions they move to another state while receiving rewards.
+Also, as stated before, we will restrict ourselves to the two-player, zero-sum case \refother{bg:g:basics:rewards}.
+As mentioned before, this is a strictly competitive type of game, where player $i$ receives a reward $r$ and player $-i$ receives a reward $-r$
+Both players want to maximize their outcome.
+However, it is usually redefined that both players receive reward $r$ and while player $1$ wants to maximize this quantity (the \textit{Max} player), player $2$ minimizes it (the \textit{Min} player).
+
+\begin{definition}\label{bg:sg:def:def}
+    A two-player zero-sum stochastic game\cite{poposgsthesis} is a tuple $\left(S, A_1, A_2, T, R, \gamma\right)$, where
+    \begin{itemize}
+        \item $S$ is a finite set of states,
+        \item $A_1, A_2$ are finite sets of actions available to player $1$, resp. player $2$,
+        \item $T(\news \mid s, a_1, a_2)$ is the \textit{transition function} $T: S \times A_1 \times A_2 \times S \to [0, 1]$, which gives the probability of transitioning from state $s$ to $\news$ with selected action profile $(a_1, a_2)$,
+        \item $R(s, a_1, a_2)$ is the \textit{reward function} $R: S \times A_1 \times A_2 \to \mathbb{R}$ specifying the reward gained by player 1 when action profile $(a_1, a_2)$ was played in the state $s$ and
+        \item $\gamma$ is a discount factor.
+    \end{itemize}
+\end{definition}
+
+\subsection{Properties}\label{bg:sg:properties}
+Even though the transitions between states are probabilistic, so one action profile can lead to multiple new states, stochastic games are games with perfect information.
+Both players can observe actions played by their opponent and can form play histories consisting of states and played actions.
+They can leverage this information to better reason about selecting the best action to play in every state.
+
+Both players strive to obtain the best possible cumulative rewards throughout the whole play.
+The maximizing player wants to get the maximal possible overall outcome, while the minimizing player wants the minimal possible outcome.
+However, the play can be infinitely long, so other methods to accumulate rewards have to be used.
+We will focus on discounted rewards as they are less complicated and have better properties than for example average rewards.
+In discounted rewards case players collect rewards in a way of infinite discounted sum $\sum_{t=0}^{\infty} \gamma^t r_t$, where $0 < \gamma < 1$ is the \textit{discount factor}.
+
+For every two-player, zero-sum stochastic game with discounted rewards there exists a Nash equilibrium independent of the starting state.
+Moreover, in this type of game, the equilibrium strategies are \textit{Markovian}, meaning that the strategies depend only on the current state.
+These two properties combined are called \textit{Markov perfect equilibrium}.
+However, these stationary equilibrium strategies are not necessarily deterministic as in the single-agent MDP case.
+They might be stochastic, i.e. mixed, which means that a player doesn't have a single best action, but is given an optimal probability distribution over actions $\simplex{A_i}$ from which the played action is drawn.
+This causes some additional demands on the solving algorithm, which will be revealed in \refsec{standard:sg}.
+
+\section{Partially observable stochastic games}\label{bg:posg}
+The next step from stochastic games described in previous sections towards a more general game model are \textit{partially observable stochastic games}, or POSGs.
+
+In Markov games, the current state $s$ was accurately revealed to both players in every time step $t$.
+This fact allowed players to reason about quality of their individual actions more precisely.
+However, in partially observable stochastic games, the current state generally stays hidden to both players.
+To provide the agents with some information, they receive private \textit{observations} similarly as in POMDPs \refdef{bg:pomdp:def}.
+Each player $i$ then keeps belief $b_i \in \Delta(S)$, which is a probability distribution over states in $S$ representing their knowledge about the current state.
+They make their decisions based on this belief $b_i$.
+
+In a POSG, both players keep their own belief initialized as $\binit \in \Delta(S)$, which is public.
+Based on transition function $T$ they both move to the same new state $\news \in S$, but they do not know which state.
+Instead, they are each given a private observation and with this observation they adjust their beliefs.
+They do not know in which state they are located, the actions played by the adversary, or the observation received by the adversary.
+However, they have \textit{perfect recall}, so they can remember history of their own actions and observations.
+From these pairs, they can construct \textit{behavioural strategies} according to which they act, i.e. $\sigma_i : (A_iO_i) \to \Delta(A_i)$.
+
+Even though, there exist theoretical results for solving POSGs with finite horizon, they are not applicable to the infinite horizon\cite{posg}.
+In their solution \cite{posg}, they define a distribution over possible action-observation histories and by these distributions they define value function similar to \textit{Bayesian games}.
+However, the number of action-observation histories grows exponentially with horizon, and thus it is impossible to use this approach on games with infinite horizon.
+To tackle this issue, there exist restrictions that simplify the problem and make practical solutions possible.
+
+One of such restrictions are \textit{one-sided partially observable stochastic games}, or \textit{OS-POSGs}\cite{osposgs}.
+In this type of games, one of the player has perfect information while the other still receives observations.
+This type is focus of this thesis and will be discussed in more detail in the next section.
+
+The second simplification of POSGs are \textit{partially observable stochastic games with public observations}, or \textit{PO-POSGs}\cite{poposgs}.
+Here, both players still receive observations, but the observations are public, meaning that the player 1 knows what the player 2 observed and vice versa.
+This allows the agents to reason about the belief of the adversary and thus better compare quality of the actions.
+
+\section{One-sided partially observable stochastic games}\label{bg:osposg}
+Contents of this section, most importantly the definitions and formulas, are taken from a doctoral thesis \cite{osposgs} with a slight change in notation to match the other definitions in this document.
+It focuses and describes a subclass of partially observable stochastic games, POSGs \refsec{bg:posg}, mentioned in the previous section.
+Because this model is a restricted version of the general model, it avoids some problems which make the general model intractable.
+By introducing asymmetry in the knowledge of the agents it reduces the high dimension of the problem.
+
+Here, we present the model and basic concepts, in the next chapter \refchap{standard} is then described the standard methods for solving this class of games.
+In the chapter \refchap{new} is then proposed alternative solving algorithm employing multi-armed bandits.
+
+\subsection{Model}\label{bg:osposg:model}
+\begin{definition}\label{bg:osposg:model:def}
+    A two-player zero-sum One sided partially observable stochastic game (or OS-POSG) is a tuple $G = \left(S, A_1, A_2, O, T, R, \binit, \gamma\right)$, where
+    \begin{itemize}
+        \item $S$ is a finite set the game's states,
+        \item $A_1$ and $A_2$ are finite sets of actions available to player 1, or player 2 respectively,
+        \item $O$ is a finite set of observations for the player 1,
+        \item $T: S \times A_1 \times A_2 \to \Delta(O \times S)$ is a probabilistic transition function defining probability of transitioning from state $s \in S$ by playing $\left(a_1, a_2\right) \in A_1 \times A_2$ to a new state $\news \in S$ while generating observation $o \in O$,
+        \item $R: S \times A_1 \times A_2 \to \mathbb{R}$ is a reward function of player 1,
+        \item $\binit \in \Delta(S)$ is the initial belief of player 2,
+        \item $\gamma \in \left(0, 1\right)$ is the discount factor.
+    \end{itemize}
+\end{definition}
+
+As opposed to the POSG model, in OS-POSGs, only the player 1 receives observations, the opposing player 2 has perfect information about the current state and played actions by both players.
+To represent knowledge of the current state held by the oblivious player 1 we use the same notion of belief as was used in POMDPs and general POSGs.
+This said belief is a probability distribution over the states $\Delta(S)$.
+
+\subsubsection{Course of the game}\label{bg:osposg:model:course}
+The game begins by sampling the initial state $s^1$ from the initial belief $b^{\text{init}}$.
+
+Then, for an infinite number of rounds, i.e. stages, the players simultaneously choose actions which move them through the game environment.
+After playing this pair of \textit{joint} actions, both of the agents receive rewards from the reward function $R$ potentially with some additional data and the game transitions into the next state $\news$.
+Note that the OS-POSG is a zero-sum game, thus the rewards for players differ only in the sign.
+The next state $\news \in S$ is chosen by the environment with respect to the transition function $T$, the current state $s$ and the joint action profile $\left(a_1, a_2\right)$.
+
+Not only the transition function returns a probability distribution over the states, but it also provides an observation $o \in O$ for the first player.
+Player 2, on the other hand, is shown exactly the state of the game and the action played by the adversary.
+Thus, he has perfect information about the game and can observe the entire course of the game.
+The player 1 knows only his selected actions and the received observations, hence the information asymmetry between the two agents.
+
+\subsubsection{Strategies}\label{bg:osposg:model:strat}
+Due to the repeated infinity nature of the game, two types of strategies are defined.
+The one known from the matrix games and stochastic games are stage strategies, which correspond to probability distributions over available actions in the particular stage.
+Due to the asymmetry in knowledge, each player has a different definition of a stage strategy.
+\begin{definition}
+    Let $G = \left(S, A_1, A_2, O, T, R, b^{text{init}}, \gamma\right)$ be a OS-POSG.
+    Then 
+    \begin{itemize}
+        \item a stage strategy of the player 1 is defined as a distribution $\pi_1 \in \Delta(A_1)$ and
+        \item a stage strategy of the player 2 is a mapping $\pi_2 : S \to \Delta(A_2)$.
+    \end{itemize}
+    The sets of all stage strategies are denoted as $\Pi_1$ and $\Pi_2$.
+\end{definition}
+The mapping $\pi_2$ can be understood as a probability distribution over actions conditioned by the current state $s$, which is perfectly observed by the player $2$.
+Thus, as used in \cite{osposgs} and \cite{poposgsthesis}, we use the notation $\pi_2(a_2 \mid s)$ for the stage strategy mapping.
+
+Player 1, however, cannot adjust his strategy for the current state, because it is unknown to him.
+Thus, the simple distribution over actions $\Delta(A_1)$.
+
+These strategies can be used to play only a single round of the game.
+In OS-POSGs there are infinitely many stages, thus a more powerful notion of strategy is needed.
+For this serve \textit{behavioural} strategies.
+\begin{definition}
+    Let $G$ be an OS-POSG.
+    Then, mapping $\sigma_1 : \left(A_1O\right)^* \to \Delta(A_1)$ is a behavioural strategy of player 1 and mapping $\sigma_2 : \left(SA_1A_2O\right)^*S \to \Delta(A_2)$ is a behavioural strategy of the player 2.
+    The sets of all behavioural strategies are denoted as before as $\Sigma_1$ and $\Sigma_2$.
+\end{definition}
+The \textit{behavioural strategies} define a distribution over actions given the previously observed \textit{history} of length $t$ thus determining the way the game is played in specific stages at time $t$.
+
+Moreover, composition of behavioural strategies and stage strategies is possible and results in new behavioural strategies assigning distributions to histories of length $t + 1$ (one additional stage strategy to the histories of length $t$).
+This composition is described in more detail in \cite{poposgsthesis} together with a derivation and a formula.
+
+The infinite history is then called a \textit{play}.
+To assign a value to a play, we consider discounted rewards in the same way as in sequential decisions \ref{bg:mdp} and the basic concepts of the game theory \ref{bg:g:basics:rewards} and that is $\sum_{t = 1}^{\infty} \gamma^{t - 1} R(s^t, a_1^t, a_2^t)$
+
+\subsubsection{Belief}\label{bg:osposg:model:belief}
+As mentioned before, the unobserving player 1 keeps a probability distribution $b \in \Delta(S)$ called belief, which represents his knowledge about the state of the game.
+Based on the observations received from the environment, he adjusts it during the course of the game to simplify choosing appropriate actions.
+However, an assumption is needed, that the player 1 knows some stage strategy $\pi_2$ of the adversary and based on this strategy he updates his current belief.
+If this premise is fulfilled, the new belief for the following stage is computed as follows.
+\begin{definition}\label{bg:osposg:model:belief:update}
+    Let $b \in \Delta(S)$ be current belief, $\pi_1 \in \Pi_1$ a strategy of the player 1, $\pi_2 \in \Pi_2$ a strategy of the opponent, $a_1$ be action played in the current round by the player 1 and $o$ an observation generated by the transition function $T$ when proceeding to the next state.
+    An \textit{updated belief} is then computed for every state $\news \in S$ as
+    \begin{equation}
+        \tau(b, \pi_2, a_1, o)(\news) = \frac{1}{\mathbb{P}_{b, \pi_1, \pi_2}\left[a_1, o\right]}\sum_{\left(s, a_2\right) \in S \times A_2} b(s) \pi_1(a_1)  \pi_2(a_2 \mid s) T(o, \news \mid s, a_1, a_2)
+    \end{equation}
+\end{definition}
+The normalization constant $\frac{1}{\mathbb{P}_{b, \pi_1, \pi_2}\left[a_1, o\right]}$ ensures that the new belief is in fact a distribution over the states $\Delta(S)$.
+
+\section{Summary}\label{bg:summary}
+In this chapter, we presented theoretical background for problems related to and used in this thesis.
+We discussed simple models of single-agent sequential reasoning as are MDPs and POMDPs.
+Then we defined basic principles and terms of the game theory, we focused on the description stochastic games and partially observable stochastic games.
+The one-sided subclass of POSGs was mentioned separately as its solving algorithms will be one of the main topics.
+
+In the following chapter, standard methods to obtain solutions for these aforementioned models are presented.
+Then proceeds a discussion of basics of reinforcement learning, specifically multi-armed bandit algorithms, which play a crucial role in the main goals of this thesis.
+Results of these two chapters are then combined to define algorithms incorporating the bandits inside the standard method settings.
+\end{document}

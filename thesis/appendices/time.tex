@@ -1,0 +1,49 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+\chapter{Time analysis in SG experiments}\label{apx:time}
+The execution time of the bandit iteration algorithm, as it was designed and mentioned in \refother{exp:sg:env:eval}, strictly depends on the number of states of the stochastic game.
+In every round, for every state, two bandits, one for each player, have to select an action, receive the computed stage game value based on those actions and update their inner states.
+
+In our case, the number of rounds is fixed for all runs of the algorithm to $T = 10^5$, the number of states, however, differs for every instance.
+This number is equal to the second power of either the number of empty cells of the maze in the case of \textit{Tag} or the size of the set of all vertices in the case of \textit{Catch}.
+To this count, the absorbing terminal state, which completes the SG model, must be added before computing the second power.
+The total number of states is then computed as $|S| = (K + 1)^2$, where $K$ is the count based on the type of game mentioned above.
+Thus, the performance degrades fast with larger number of states.
+
+\begin{table}[ht]
+    \begin{tabular}{l | c || r | r | r}
+        instance & no. of states & min & median & max \\
+        \hhline{=|=||=|=|=}
+          \tagname{2}{01} & 16 & $25.1$ s & \cellcolor[gray]{0.8}$27.1$ s & $39.1$ s \\
+            \chasename{3} & 16 & $34.5$ s & \cellcolor[gray]{0.8}$39.7$ s & $66.0$ s \\
+            \chasename{4} & 25 &  $2.3$ min & \cellcolor[gray]{0.8} $2.4$ min &  $4.1$ min  \\
+            \chasename{5} & 36 &  $6.0$ min & \cellcolor[gray]{0.8} $6.6$ min & $10.4$ min \\
+          \tagname{3}{04} & 49 & $17.3$ min & \cellcolor[gray]{0.8}$18.5$ min & $19.9$ min \\
+          \tagname{3}{01} & 64 & $31.7$ min & \cellcolor[gray]{0.8}$33.6$ min & $66.6$ min \\
+          \tagname{3}{03} & 64 & $32.8$ min & \cellcolor[gray]{0.8}$33.7$ min & $35.9$ min \\
+          \tagname{3}{06} & 64 & $33.2$ min & \cellcolor[gray]{0.8}$34.2$ min & $55.0$ min \\
+          \tagname{3}{02} & 64 & $48.2$ min & \cellcolor[gray]{0.8}$50.6$ min & $53.1$ min \\
+          \tagname{3}{07} & 64 & $49.4$ min & \cellcolor[gray]{0.8}$50.6$ min & $52.8$ min \\
+          \tagname{3}{05} & 64 & $49.6$ min & \cellcolor[gray]{0.8}$51.5$ min & $57.5$ min \\
+    \end{tabular}
+    \caption[Execution times of bandit iteration for stochastic games]{Statistics of execution times for individual instances of both \textbf{Chase} and \textbf{Tag} processed over 10 independent runs. Each run was solved by bandit iteration for $10^5$ iterations. The rows in the table are sorted in an ascending order by the median time.}
+    \label{apx:time:stats}
+\end{table}
+
+\reftab{apx:time:stats} shows statistics about running times of the bandit iteration algorithm on individual instances of both games.
+The experiments were conducted according to \refsec{exp:sg:env:runs}, so they ran for $10^5$ iterations each, every different setting $10$ times with random seeds.
+
+Note that, the instances were solved by all bandits and some bandits are more computationally demanding than the others, which causes the significant spread between \textit{min} and \textit{max} times.
+The few cases, where the maximal execution time is much longer than the median, were very limited in number and always occurred within trials of a single bandit algorithm.
+This could be caused by damaged pre-compilation of the code, which would force Julia to compile during the first runs of the cluster job.
+Another possible origin of these outliers is temporary overload of the cluster.
+
+The data confirm the claims above, that the execution time depends strongly on the number of states in the model.
+Those instances with the same number of states then differ in number of actions per state.
+The higher the number of actions in a state, the more computationally demanding the corresponding bandit is and thus the whole algorithm is slowed down.
+This phenomenon can be showcased on two groups of \textit{Tag}, the first group being \tagname{3}{01}, \tagname{3}{03}, \tagname{3}{06} and the second \tagname{3}{02}, \tagname{3}{07}, \tagname{3}{05}.
+While the instances in the first group average approximately $5.4$ actions per state (both tagger and evader actions are taken together), the second group averages around $6.5$. actions per state.
+It can be seen that the difference of one action per state adds over the course of $10^5$ iteration roughly $20$ minutes.
+
+\end{document}

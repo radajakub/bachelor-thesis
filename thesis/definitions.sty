@@ -1,0 +1,33 @@
+\ProvidesPackage{definitions}
+
+\DeclareMathOperator*{\argmax}{argmax}
+\DeclareMathOperator*{\argmin}{argmin}
+
+%%%%%% stochastic
+
+\newcommand{\vstar}{V^*}
+\newcommand{\strategy}[1]{\pi_{#1}}
+\newcommand{\simplex}[1]{\Delta(#1)}
+\newcommand{\news}{s^{\prime}}
+
+\newcommand{\ucb}{\text{UCB}(a, \alpha)}
+\newcommand{\ucbp}{\text{UCB}(a^{\prime}, \alpha)}
+\newcommand{\ucbt}{\text{UCB}^t(a, \alpha)}
+\newcommand{\ucbtp}{\text{UCB}^t(a^{\prime}, \alpha)}
+
+\newcommand{\lcb}{\text{LCB}(a, \alpha)}
+\newcommand{\lcbp}{\text{LCB}(a^{\prime}, \alpha)}
+\newcommand{\lcbt}{\text{LCB}^t(a, \alpha)}
+\newcommand{\lcbtp}{\text{LCB}^t(a^{\prime}, \alpha)}
+
+%%%% instances
+\newcommand{\tagname}[2]{\texttt{tag\_#1\_#2}}
+\newcommand{\chasename}[1]{\texttt{Chase#1}}
+
+\newcommand{\sqrtt}{\text{SQRT}(t)}
+\newcommand{\lint}{\text{LIN}(t)}
+
+\newcommand{\lb}{V_{LB}^{\Gamma}}
+\newcommand{\ub}{V_{UB}^{\Upsilon}}
+
+\newcommand{\binit}{b^{\text{init}}}

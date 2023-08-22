@@ -1,0 +1,59 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+\chapter{Conclusion}\label{end}
+To conclude this thesis, we provide an overview of the discussed topics, the summary of the achieved results and state possible further improvements of the proposed methods and approaches.
+
+\section{Thesis overview and contributions}
+In \refchap{bg}, we presented the used formal models for sequential reasoning, with a single or multiple independent agents in different types of environment.
+The simplest models for single-agent settings, MDPs and the generalizing POMDPs, were discussed together with their most important properties, which are essential for the more complicated formalisms.
+Also, the uncertainty about the state of the environment introduced by POMDPs and the means to eliminate the following problem of the infinite search space were stated as well.
+
+The same was done for a multiagent setting, i.e. an environment where multiple independent units interact and influence each other's decisions.
+This setting is thoroughly described by the game theory, so all the relevant and important notions were explained, with focus on two-player zero-sum games.
+Special attention was given to stochastic games, the partially observable stochastic games and the one-sided subset, which was the main topic of this thesis.
+
+The \refchap{standard} contains description of the existing methods which are guaranteed to find exact or approximate solutions of problems formalized as one of the models mentioned in \refchap{bg}.
+The properties of these algorithms were investigated and possible disadvantages, which motivate the creation of this thesis, were stated.
+The main problem of the presented algorithms is the usage of linear programming framework, which especially for the non-observable games grows in size rapidly making very large instances intractable.
+
+The next chapter \refchap{bandit} introduces the multi-armed bandit algorithm framework as a standard tool of reinforcement learning and the main mean of replacement of the linear programs in the standard methods.
+The basic principles are presented and the standard definitions of stochastic and adversarial bandits are listed.
+Specifically, the bandits discussed are \textit{Best of N}, \textit{$\epsilon$-greedy}, \textit{Successive elimination} and the \textit{UCB} bandits from the stochastic class and the \textit{Exp3} as an adversarial algorithm.
+
+In \refchap{new} we modified the methods and algorithms discussed in the previous chapters to fit them more into the game theoretical context and to remove the need for linear programming in the existing solving algorithms.
+First, we adapted the standard bandit algorithms to contain more stochastic elements, for example changing the order of arms to prevent selecting the same arm all the time by order-dependent operations.
+Second, we proposed so-called observable variants of the stochastic bandits which accept the actions of the opponent as observations to form average play strategies of the adversary and leverage this statistics to make better decisions.
+Then, we introduced the \textit{bandit iteration} algorithm which is derived from the value iteration method but replaces solving the stage game by a linear program with gradually selecting actions by bandit algorithms and learn the optimal strategies.
+Last, we incorporated the bandit algorithms into the HSVI algorithm for OS-POSGs to create \textit{B-HSVI} algorithm which again replaces stage games with iterative updates of the bandit algorithms and learning Nash equilibria.
+
+In the last \refchap{exp}, we compared convergence of the altered multi-armed bandit algorithms from \refchap{new} both in the \textit{bandit iteration} and \textit{B-HSVI} frameworks on specific instances of stochastic games and one-sided partially observable stochastic games.
+As stated in the introduction \refchap{intro}, the experiments focused more on the stochastic games as the area of bandit algorithms was not fully investigated there, and the partially observable superset is just a harder problem.
+Thus, it is sensible to first thoroughly explore the perfect information games before moving to the imperfect information.
+
+In the context of stochastic games, we compare the convergence of the average-play variants to the non-observable bandits.
+From the conducted experiments it results, that the observable algorithms are superior to the standard ones as they often converge faster and closer to the optimal values.
+Two functions serving as averaging rates were compared, the first being the regular arithmetic average $\lint = \frac{1}{t}$, where $t \in \left\{1, 2, \dots, T\right\}$ is the time step of the optimization, and the second being a faster learning factor $\sqrtt = \frac{1}{\sqrt{t}}$.
+The best bandits according to the experimental evaluation were the observable UCB together with the $\sqrtt$ learning step and the Exp3 algorithm.
+These two managed to converge to the optimal value even in states with randomized optimal strategies.
+On the other hand, the Best of N, Successive elimination and unobservable UCB perform very poorly in those states.
+
+Then, the same comparison was conducted on the domain of one-sided partially stochastic games within the \textit{B-HSVI} algorithm, but only for the standard bandits.
+From these comparisons, the best performing algorithms were the Exp3 and $\epsilon$-greedy with high exploration $\epsilon = 0.3$.
+On the other hand, the UCB and Successive elimination almost never converged close to the optimal value.
+
+\section{Future ideas}
+This concludes the contributions of the bachelor thesis and only a few suggestions for a next work are listed as there is a space for improvement in the proposed algorithms.
+
+As far as the algorithm for stochastic games, neither of the used averaging steps is perfect.
+The $\lint$ step causes slow convergence for all tested bandits, but in contrast the faster $\sqrtt$ showed large fluctuations in value at the later stages of the experimental evaluation.
+Some monotonously decreasing function, which however decreases faster than $\frac{1}{t}$, but slower than $\frac{1}{\sqrt{t}}$, could bring dramatic improvements.
+
+For the OS-POSG domain, we designed the \textit{B-HSVI} algorithm to use bandits of the same type for the upper and lower bound.
+However, the perfect information of the player 2 could be leveraged and lead to a better result.
+The bandits in the upper and lower bound belonging to the fully-informed player could possibly employ the average play approach similarly as the observable bandits for stochastic games, which showed much better properties.
+
+The next large step is to use the bandit algorithms for another subclass of partially observable stochastic games, which is PO-POSGs, i.e. partially observable stochastic games with public observations \cite{poposgs}, where both agents do not have perfect information and the search space is thus much larger.
+The HSVI algorithm for this domain is based on the similar principle of the refinement of the lower and upper bounds, even though, the situation is more complex, than in OS-POSGs.
+
+\end{document}

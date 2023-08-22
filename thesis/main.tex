@@ -1,0 +1,202 @@
+\documentclass[twoside]{ctuthesis}
+
+\ctusetup{
+% preprint = \ctuverlog,
+mainlanguage = english,
+otherlanguages = {slovak,english},
+title-czech = {Porovnání metod explorace v částečně pozorovatelných stochastických hrách},
+title-english = {Comparing Exploration Methods in Partially Observable Stochastic Games},
+xdoctype = B,
+xfaculty = F3,
+department-czech = {Katedra kybernetiky},
+department-english = {Department of Cybernetics},
+author = {Jakub Rada},
+supervisor = {doc. Mgr. Branislav Bošanský, Ph.D.},
+supervisor-address = {Department of Computer Science},
+fieldofstudy-english = {Open Informatics},
+subfieldofstudy-english = {Artificial Intelligence and Computer Science},
+fieldofstudy-czech = {Otevřená Informatika},
+subfieldofstudy-czech = {Základy umělé inteligence a počítačových věd},
+keywords-english = {game theory, stochastic games, partially observable stochastic games, multi-armed bandits, value iteration, hsvi},
+keywords-czech = {teorie her, stochastické hry, částečně pozorovatelné stochastické hry, problém mnohorukého bandity, value iteration, hsvi},
+day = 20,
+month = 5,
+year = 2022,
+specification-file = {assignment.pdf},
+front-specification = true,
+front-list-of-figures = false,
+front-list-of-tables = false,
+%monochrome = true,
+%layout-short = true,
+pkg-listings = true,
+}
+
+\ctuprocess
+
+\addto\ctucaptionsczech{%
+\def\supervisorname{Vedoucí}%
+\def\subfieldofstudyname{Studijní program}%
+}
+
+\ctutemplateset{maketitle twocolumn default}{
+\begin{twocolumnfrontmatterpage}
+\ctutemplate{twocolumn.thanks}
+\ctutemplate{twocolumn.declaration}
+\ctutemplate{twocolumn.abstract.in.titlelanguage}
+\ctutemplate{twocolumn.abstract.in.secondlanguage}
+\ctutemplate{twocolumn.tableofcontents}
+\ctutemplate{twocolumn.listoffigures}
+\end{twocolumnfrontmatterpage}
+}
+
+% Theorem declarations, this is the reasonable default, anybody can do what they wish.
+% If you prefer theorems in italics rather than slanted, use \theoremstyle{plainit}
+\theoremstyle{definition}
+\newtheorem{theorem}{Theorem}[chapter]
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{note}
+\newtheorem*{remark*}{Remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Abstract in Czech
+\begin{abstract-czech}
+    Částečně pozorovatelné stochastické hry modelují mnoho reálných situací skládající se ze dvou nezávislých agentů.
+    Jejich podtřídu jednostranných her lze přibližně vyřešit algoritmem HSVI, který pomocí dvou value funkcí, jedné spodní a jedné horní meze, odhaduje optimální value funkci hry.
+    V každé iteraci se aplikuje Bellmanův operátor na obě meze, který aktualizuje jejich hodnotu v bodech, které byly vybrány heuristickou funkcí.
+    Nicméně, není dokázáno, že tento heuristický přístup, který je založený na strategiích obou hráčů a velikosti mezety mezi mezními funkcemi, je optimální metodou explorace pro prohledávání prostoru bodů beliefu.
+
+    Mnohorucí bandité jsou algoritmy používané v posilovaném učení, které řeší problém vyvažování explorace a exploitace.
+    Je tedy možné použít tyto mnohoruké bandity jako alternativní způsob prohledávání prostoru bodů beliefu a tím zlepšovat meze HSVI algoritmu.
+    Mnohorucí bandité mohou také zajistit podobný alternativní přístup k řešení fázových her v plně pozorovatelných stochastických hrách řešených metodou iterace hodnoty.
+    Navíc, použití banditů eliminuje použití metod lineárního programování, které mohou způsobovat špatnou škálovatelnost původních algoritmů.
+
+    Cílem této práce byla integrace tohoto nového přístupu explorace do iterace hodnoty a HSVI a porovnání některých mnohorukých banditů na plně i částečně pozorovatelných stochastických hrách.
+\end{abstract-czech}
+
+% Abstract in English
+\begin{abstract-english}
+    The partially observable stochastic games model many situations consisting of two independent agents.
+    Their one-sided subclass can be approximately solved by the HSVI algorithm, which estimates the optimal value function with lower and upper bound value functions.
+    The approximation is refined by iteratively performing Bellman-style point-based updates on both bounding value functions in belief-points selected by a heuristic approach.
+    However, this heuristic based on the strategies of both players and the gap between the bounding functions is not proven to be the optimal exploration method for searching the space of belief-points.
+
+    In reinforcement learning, multi-armed bandit algorithms are a tool for solving the exploration-exploitation problem.
+    It is thus possible to use the bandits as an alternative approach for exploring the belief-point search space and refine the bounds in the HSVI algorithm.
+    Additionally, the multi-armed bandits can provide similar alternative approach for solving stage games in the value iteration algorithm for the fully observable stochastic games.
+    Moreover, the need of linear programming is thus eliminated, which could lead to improved scalability.
+
+    The goals of this thesis were the integration of this novel exploration method into the existing solving algorithms and comparing subset of the multi-armed bandit algorithms on both SGs and OS-POSGs.
+\end{abstract-english}
+
+% Acknowledgements / Podekovani
+\begin{thanks}
+I would like to thank my supervisor doc. Branislav Bošanský for his patience, willingness and support.
+\bigbreak
+\noindent Computational resources were supplied by the project "e-Infrastruktura CZ" (e-INFRA CZ LM2018140) supported by the Ministry of Education, Youth and Sports of the Czech Republic.
+\end{thanks}
+
+% Declaration / Prohlaseni
+\begin{declaration}
+I declare that the presented work was developed independently and that I have listed all sources of information used within it in accordance with the methodical instructions for observing the ethical principles in the preparation of university theses.
+\bigbreak
+\noindent Prague, 20.5.2022
+\vspace*{1cm}
+\begin{center}
+    \begin{tabular}{p{5cm}}
+        \dotfill \\
+        \centering Signature
+    \end{tabular}
+\end{center}
+
+\end{declaration}
+
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathdots}
+\usepackage{stmaryrd}
+
+\usepackage[chapter]{algorithm}
+\usepackage{algpseudocode}
+
+% images
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
+\usepackage{colortbl}
+\usepackage{multirow}
+\usepackage{hhline}
+
+\usepackage{subcaption}
+
+\usepackage{definitions}
+
+\usepackage{tikz}
+\usetikzlibrary{positioning}
+\tikzset{box/.style={rectangle,draw=black,thick, minimum size=1cm}}
+
+\usepackage{pgfplots}
+\pgfplotsset{compat=newest}
+
+\usepackage{subfiles}
+
+\usepackage{enumitem}
+\setlist[itemize]{itemsep=0.5ex}
+
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+\newcommand{\refeq}[1]{\hyperref[#1]{(Equation \ref*{#1})}}
+\newcommand{\refineq}[1]{\hyperref[#1]{(Inequality \ref*{#1})}}
+\newcommand{\refform}[1]{\hyperref[#1]{(Formula \ref*{#1})}}
+\newcommand{\refderiv}[1]{\hyperref[#1]{(Derivation \ref*{#1})}}
+\newcommand{\refdef}[1]{\hyperref[#1]{(Definition \ref*{#1})}}
+\newcommand{\refth}[1]{\hyperref[#1]{(Theorem \ref*{#1})}}
+\newcommand{\reffig}[1]{\hyperref[#1]{(Figure \ref*{#1})}}
+\newcommand{\reftab}[1]{\hyperref[#1]{(Table \ref*{#1})}}
+\newcommand{\refchap}[1]{\hyperref[#1]{(Chapter \ref*{#1})}}
+\newcommand{\refsec}[1]{\hyperref[#1]{(Section \ref*{#1})}}
+\newcommand{\refalg}[1]{\hyperref[#1]{(Algorithm \ref*{#1})}}
+\newcommand{\refpseudo}[1]{\hyperref[#1]{(Pseudocode \ref*{#1})}}
+\newcommand{\reflp}[1]{\hyperref[#1]{(LP \ref*{#1})}}
+\newcommand{\refapx}[1]{\hyperref[#1]{(Appendix \ref*{#1})}}
+\newcommand{\refother}[1]{\hyperref[#1]{(\ref*{#1})}}
+
+\begin{document}
+
+\maketitle
+
+\subfile{./sections/introduction.tex}
+
+\subfile{./sections/background.tex}
+
+\subfile{./sections/solutionmethods.tex}
+
+\subfile{./sections/bandits.tex}
+
+\subfile{./sections/usingbandits.tex}
+
+\subfile{./sections/experiments.tex}
+
+\subfile{./sections/conclusion.tex}
+
+\bibliography{./references.bib}
+\bibliographystyle{ieeetr}
+
+\appendix
+
+\subfile{./appendices/time.tex}
+
+\subfile{./appendices/sg_exp.tex}
+
+\subfile{./appendices/code.tex}
+
+\end{document}

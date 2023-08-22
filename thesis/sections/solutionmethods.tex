@@ -1,0 +1,457 @@
+\documentclass[../main.tex]{subfiles}
+
+\begin{document}
+
+\chapter{Standard solution methods}\label{standard}
+In this chapter we mention and describe the solution methods that are commonly used to solve the models mentioned in the previous chapter \refchap{bg}.
+These methods are proven to find the solution or at least an approximation but usually struggle from poor scalability.
+In the next chapter, we use ideas from these methods to design alternative solution methods.
+
+As in the previous chapter, notions and theoretical properties are based on \textit{Artificial Intelligence: A Modern Approach}\cite{aima}, \textit{Multiagent Systems: Algorithmic, Game-Theoretic and Logical Foundations}\cite{multiagent}.
+
+\section{MDP}\label{standard:mdp}
+To solve an MDP means finding an optimal policy $\pi^*$, which will guarantee that the agent gains the best utility if he plays according to $\pi^*$.
+Due to the Markov property, the policy $\pi^*$ need not be computed directly, but it is sufficient to find the optimal value function $V^*$.
+The optimal policy $\pi^*$ can be extracted from $V^*$.
+
+Algorithms designed to find the solution of an MDP are based on \textit{value iteration} or \textit{policy iteration}.
+These two algorithms are built around \textit{Bellman equations}, different for both methods.
+We focus on the former because value iteration will be crucial in solving stochastic games later in this thesis.
+
+\begin{theorem}\label{standard:mdp:bellmaneq}
+    Let $\left(S, A, T, R\right)$ be an MDP.
+    Let $V: S \to \mathbb{R}$ be a value function assigning each state $s \in S$ a real value.
+    An optimal value function $V^{*}$ is a value function which is the single solution of the \textit{Bellman equation}
+    \begin{equation}
+        V^{*}(s) = R(s) + \gamma \cdot \max_{a \in A} \sum_{\news \in S} T(\news \mid s, a) \cdot V^{*}(\news) \quad \forall s \in S.
+    \end{equation}
+\end{theorem}
+Value $V^{*}(s)$ then corresponds to the expected reward received if the agent started the play in state $s$.
+
+\subsection{Value iteration}\label{standard:mdp:valueiter}
+An iterative variant of this system of non-linear equations is called the \textit{Bellman operator} and the computation of a new value for state $s \in S$ by applying this operator on the old value is called the \textit{Bellman update}.
+\begin{equation}\label{standard:mdp:bellmanup}
+    V_{t+1}(s) = R(s) + \gamma \cdot \max_{a \in A} \sum_{\news \in S} T(\news \mid s, a) \cdot V_{t}(\news) \quad \forall s \in S.
+\end{equation}
+More specifically, this operator takes into account the utility values of all states adjacent to the current state and selects the neighbouring state with the maximal utility to compute the new value.
+\begin{definition}\label{standard:mdp:valueiter:contraction}
+    Let $f: X \to X$ be a mapping and $||.||$ be a norm defined on the vector space $X$.
+    Let $0 \leq \delta < 1$.
+    If the condition \refineq{standard:mdp:valueiter:contraction:formula} holds, the mapping $f$ is a contraction.
+    \begin{equation}\label{standard:mdp:valueiter:contraction:formula}
+        ||f(a) - f(b)|| \leq \delta ||a - b|| \qquad \forall a,\,b \in X
+    \end{equation}
+\end{definition}
+Very important fact is, that the Bellman operator is a contraction \refdef{standard:mdp:valueiter:contraction}, which ensures that the algorithm converges.
+
+\begin{algorithm}
+    \caption{Value iteration for MDPs}
+    \label{standard:mdp:valueiter:alg}
+    \begin{algorithmic}[1]
+        \Require an MDP $\left(S, A, T, R\right)$, $\epsilon$
+        \Ensure $\epsilon$-approximation of $\vstar$
+        \State Initialize $V_1(s) \leftarrow 0 \qquad \forall s \in S$
+        \State Set $t = 1$
+        \Repeat
+            \State $\Delta \leftarrow 0$
+            \For{$s \in S$}
+                \State $V_{t + 1}(s) \leftarrow R(s) + \gamma \max_{a \in A}\sum_{\news \in S}T(\news \mid s, a) \cdot V_{t}(\news)$
+                \State $\Delta \leftarrow \max\left\{\Delta, |V_{t}(s) - V_{t - 1}(s)|\right\}$
+            \EndFor
+            \State $t \leftarrow t + 1$
+        \Until{$\Delta \leq \epsilon$}
+        \State\Return $V$
+    \end{algorithmic}
+\end{algorithm}
+
+The \textit{value iteration} \refalg{standard:mdp:valueiter:alg} then iterates through all states and applies the so-called Bellman update to each of them, which causes the immediate rewards to propagate to other states.
+When the new value is close enough to the current value for every state (the maximal difference of these values from all states is stored in variable $\Delta$ in \refalg{standard:mdp:valueiter:alg}), the value iteration has converged to its optimal state.
+We say, that it reached an equilibrium, which is an important notion in games as well.
+The optimal policy is then extracted as simply selecting the state with the highest assigned value from value iteration.
+
+\subsection{Policy iteration}\label{standard:mdp:policyiter}
+For the sake of completeness, we briefly mention another iterative algorithm for solving MDPs called the \textit{policy iteration}.
+As opposed to value iteration, the policy iteration consists of two altering phases.
+First is policy evaluation, which evaluates current policy in each state.
+Second is policy improvement, which in each state uses a modified Bellman update and looks one step ahead and tries to find better action to play.
+If no action assignment was changed, the found policy optimal.
+
+\section{POMDP}\label{standard:pomdp}
+In the previous chapter \refsec{bg:pomdp}, we defined a notion of an $\alpha$-vector as function linear in belief $b$, which represents an $n$-step policy plan, where $n$ is the time step of the $\alpha$-vector's creation.
+The motivation behind this idea was to tackle the intractability of the infinite belief space, which would render the standard MDP solution methods useless.
+If we redefined POMDP as an MDP over the belief state, as mentioned in \refsec{bg:pomdp}, it would imply applying the Bellman operator infinitely many times in each iteration.
+The definition of $\alpha$-vectors partly removes this problem as the number of $\alpha$-vectors depends on the number of possible actions which is finite.
+Now, we can redefine value iteration from MDPs for POMDPs using this notion of $\alpha$-vectors.
+
+\subsection{Value iteration}\label{standard:pomdp:valueit}
+To perform the exact value iteration algorithm we can keep a set of $\alpha$-vectors, denoted $\Gamma$.
+In each iteration $t$, new $\alpha$-vectors are added and these correspond to all $t$-step policies for all states.
+Thus, each such iteration adds all combinations of previous $(t-1)$-step $\alpha$-vectors and possible actions to the $\Gamma$ set.
+Because $\alpha$-vectors represent values for $n$-step policies, the value function in a belief point $b$ is then computed as piecewise maximum over the set $\Gamma$
+\begin{equation}\label{standard:pomdp:valuefun}
+    V(b) = \max_{\alpha \in \Gamma}\alpha(b)
+\end{equation}
+and this way the best $n$-step plan is selected \cite{poposgsthesis}.
+Even though, $\alpha$-vectors solved the issue with infinite state-space, the size of $\Gamma$ grows very rapidly and causes this method to be unscalable.
+
+The size can be partly reduced be removing \textit{dominated} $\alpha$-vectors.
+An $\alpha$-vector becomes dominated, when there always exist some other $\alpha$-vector with higher value over the whole belief space.
+This means, that this vector is never optimal and will never be relevant to the solution of the game and thus can be removed from the $\Gamma$ set.
+Nevertheless, this \textit{pruning} of $\Gamma$ is not enough to completely solve the poor scalability.
+Hence, another approach must be used.
+
+\subsection{Point based value iteration}\label{standard:pomdp:pbvi}
+The problem in the scalability comes mainly from the size of the belief space which is infinite.
+The idea behind the PBVI method is to represent the entire belief space with a finite set of belief points.
+Then, the Bellman update is performed only on elements of this finite set.
+Moreover, an $\alpha$-vector is added to $\Gamma$ only if it is the best for any of those belief points.
+This way, we have a coarser approximation of the real value, but now the number of $\alpha$-vectors is bounded by the size of the set of belief points.
+On the other hand, the quality of the found solution depends on the selected belief points, and it is not a simple task to select which belief points lead to a good approximation.
+Similar idea about belief points is used in the HSVI algorithm described in the next part \refsec{standard:pomdp:hsvi}.
+
+\subsection{Heuristic search value iteration}\label{standard:pomdp:hsvi}
+There are methods to approximate the value function without the need to keep all $\alpha$-vectors and thus scale better.
+One of these methods is \textit{Heuristic search value iteration}\cite{hsvi}.
+Another algorithm with the same name and similar idea will be presented in later sections to solve partially observable games.
+
+This method keeps two piecewise linear and convex functions, \textit{lower} and \textit{upper bound}, where the lower bound is formed by a set of $\alpha$-vectors, while the upper bound consists of values in belief points, from which is then computed a lower convex hull.
+During the course of the algorithm, new points and $\alpha$-vectors are added to these sets and making the bounds closer to each other and thus making the approximation more precise.
+This operation is called \textit{point-based update}.
+
+Points to be updated are selected using a heuristic function, for example, selecting the best action based on the upper bound.
+We want to make the \textit{gap} between the bounds tighter, so it makes sense to select the action with the highest value in the upper bound and try to push it lower.
+Then, both bounds are updated at the same point.
+When some $\alpha$-vector or point in the upper bound becomes dominated, it can be removed and thus the size of those two sets can be reduced during the search.
+
+After the distance between the two bounds is smaller than required threshold $\epsilon$, the algorithm terminates and the $\epsilon$-approximation is found.
+
+\section{Stochastic games}\label{standard:sg}
+Similarly to the \textit{Markov decision processes}, there exist versions of well-known iterative algorithms to find the approximate solution of the game, namely versions of \textit{value iteration} and \textit{policy iteration}.
+In this section, we will focus on the former.
+Also, employing some methods from \textit{reinforcement learning} and \textit{multi-armed bandits} can lead to good approximations, as well.
+Those will be discussed in the next section.
+
+\subsection{Value iteration}\label{standard:sg:valueiter}
+The value iteration is a well-described method used to solve \textit{Markov decision processes}.
+It can be modified to solve stochastic games, too.
+
+\subsubsection{Value function}\label{standard:sg:valueiter:valuefun}
+Let $G = (S, A_1, A_2, T, R, \gamma)$ be a stochastic game.
+As mentioned in \refsec{bg:sg:properties}, the potentially mixed equilibrium strategies depend only on the current state $s$.
+Therefore, we can define a strategy of a player $i$ as $\strategy{i}: S \to \simplex{A_i}$, which maps a probability distribution over possible actions $A_i$ of the player $i$ to each state $s \in S$.
+
+We define a mapping $V: S \to \mathbb{R}$, which assigns a real value to every state $s \in S$.
+Then, the \textit{value function} $\vstar$ is a mapping $V$, where the value $\vstar(s)$ is the overall discounted reward received by player $1$ if the game started from the state $s$.
+This definition of value function indicates how good it is for players to move into each state and can be used later to derive optimal strategies.
+Especially useful is that the mapping $\vstar$ can be expressed by equation \cite{poposgsthesis}:
+\begin{multline}
+    \vstar(s) = [H\vstar](s) = \max_{\strategy{1} \in \simplex{A_1}} \min_{\strategy{2} \in \simplex{A_2}} \mathbb{E}_{a_1 \sim \strategy{1}(s), a_2 \sim \strategy{2}(s)} [R(s, a_1, a_2) + \\
+    + \gamma\sum_{\news \in S} T(\news \mid s, a_1, a_2)\cdot \vstar(\news)]
+\end{multline}
+The backup operator $H$ is a contraction, therefore by iteratively applying it on an arbitrarily initialized $V$, it provably converges to its fixed point $\vstar$\cite{shapley}.
+Moreover, applying the backup operator $H$ in a state $s$ is the same as determining the value of the game of a corresponding \textit{matrix game}, game in normal form.
+The description of the matrix game follows.
+
+\subsubsection{Stage game}\label{standard:sg:valueiter:stage}
+\begin{definition}\label{standard:sg:valueiter:stage:matrix}
+    Let $\left(S, A_1, A_2, T, R, \gamma\right)$ be a stochastic game and $V$ be some value function.
+    A matrix game $u$ for a state $s \in S$ is then defined as:
+    \begin{equation}
+        u(a_1, a_2) = R(s, a_1, a_2) + \gamma \sum_{\news \in S} T(\news \mid s, a_1, a_2) \cdot V(\news) \quad \forall a_1 \in A_1, \forall a_2 \in A_2
+    \end{equation}
+\end{definition}
+Suppose we have a game in normal form for state $s \in S$ of the stochastic game $G$ defined as above.
+Then, the value in the game table for an action profile $a = (a_1, a_2)$ is equal to the sum of the immediate reward received by playing action profile $a$ in state $s$ and the expected discounted reward received in all the next moves.
+
+In the context of stochastic games, this matrix game is often called a \textit{stage game} and can be solved by linear programming.
+Here is the linear program solving the game from the perspective of the maximizing player \reflp{standard:sg:valueiter:stage:lpsgmax}.
+\begin{figure}[ht]
+    \centering
+    \begin{subequations}
+        \begin{alignat}{3}
+            & \text{maximize} & \qquad & v \\
+            & \text{subject to} && \sum_{a_1 \in A_1} u(a_1, a_2) \cdot \pi_1(a_1) \geq v & \qquad & \forall a_2 \in A_2 \label{standard:sg:valueiter:stage:lpsgmax:c1} \\
+            &&& \sum_{a_1 \in A_1} \pi_1(a_1) = 1 \label{standard:sg:valueiter:stage:lpsgmax:c2} \\
+            &&& \pi_1(a_1) \geq 0 && \forall a_1 \in A_1 \label{standard:sg:valueiter:stage:lpsgmax:c3}
+        \end{alignat}
+    \end{subequations}
+    \caption{LPSGMAX($u$)}
+    \label{standard:sg:valueiter:stage:lpsgmax}
+\end{figure}
+It maximizes over all mixed strategies $\strategy{1}$ of player $1$ and value of the game $v$.
+Because we defined strategy as a distribution over actions $\simplex{A_i}$, the constraints \refother{standard:sg:valueiter:stage:lpsgmax:c2} and \refother{standard:sg:valueiter:stage:lpsgmax:c3} ensure that $\strategy{1}$ is in fact a probability distribution.
+Constraint \refother{standard:sg:valueiter:stage:lpsgmax:c1} finds those pure strategies of the opponent for which the expected utility against the player's mixed strategy $\strategy{1}$ is at least $v$.
+Those pure strategies for which the expected utility is equal to $v$ form the support of the opponent's best response.
+Moreover, the value $v$ is maximized, which influences the choice of the player's mixed strategy $\strategy{1}$.
+
+A linear program LPSGMIN($u$) solving the game from the perspective of the minimizing player can be constructed in a similar sense.
+
+\subsubsection{Algorithm}\label{standard:sg:valueiter:algorithm}
+Now, we are ready to present the used \textit{value iteration} algorithm \refalg{standard:sg:valueiter:algorithm:alg}.
+\begin{algorithm}
+    \caption{Value iteration for stochastic games}
+    \label{standard:sg:valueiter:algorithm:alg}
+    \begin{algorithmic}[1]
+        \Require $G = \left(S, A_1, A_2, T, R, \gamma\right)$, $\epsilon$
+        \Ensure $\epsilon$-approximation of $\vstar$
+        \State Initialize $V(s) \leftarrow 0 \qquad \forall s \in S$
+        \State Initialize $\Delta \leftarrow \infty$
+        \While{$\Delta \geq \epsilon$}
+            \State $\Delta \leftarrow 0$
+            \State $V_{\text{prev}} \leftarrow V$
+            \For{$s \in S$}
+                \State $V(s) \leftarrow$ solve LPSGMAX($u$) in $s$ \reflp{standard:sg:valueiter:stage:lpsgmax} \Comment{for $u$ see \refdef{standard:sg:valueiter:stage:matrix}}
+                \State $\Delta \leftarrow \max\left\{\Delta, |V(s) - V_{\text{prev}}(s)|\right\}$
+            \EndFor
+        \EndWhile
+        \State\Return $V$
+    \end{algorithmic}
+\end{algorithm}
+
+Input to the algorithm is the stochastic game $G$ and precision parameter $\epsilon$.
+The precision parameter limits the allowed gap \refdef{standard:sg:valueiter:algorithm:gap} between the last two approximations $V_{t-1}$ and $V_t$ so that $d(V_{t-1}, V_t) < \epsilon$.
+\begin{definition}\label{standard:sg:valueiter:algorithm:gap}
+    Let $V$, $V^{\prime}$ be value functions. Then, the gap between $V$ and $V^{\prime}$ is defined as
+    \begin{equation}
+        d(V, V^{\prime}) = \max \left\{\left|V(s) - V^{\prime}(s)\right|\;\mid\;\forall s \in S\right\}.
+    \end{equation}
+\end{definition}
+Informally, this implies that the distance between approximate and optimal values in each state is at most $\epsilon$.
+The output is then the $\epsilon$-estimate of the real value function $\vstar$.
+
+Any value function can be used as an initial estimate.
+For simplicity, we use $0$, but it could be initialized to any other value, for example, to maximal/minimal discounted reward.
+The algorithm always converges, but some initializations will converge faster than others.
+The initial gap $\Delta$ is initialized to an arbitrary value bigger than $\epsilon$, only to first enter the main while loop.
+
+In each iteration, the current gap is set to $0$ and the approximation of V from the previous iteration is saved for comparison.
+Then, we perform a value update for each state $s \in S$.
+The update consists of building a stage game $u$ in current state $s$ and with the last approximation $V$ according to definition \refdef{standard:sg:valueiter:stage:matrix}, getting the optimal value from the linear program LPSGMAX($u$) \reflp{standard:sg:valueiter:stage:lpsgmax} for the previously built stage game $u$ and updating the current maximal gap $\Delta$.
+After the algorithm updates value for every state, it checks the maximal gap $\Delta$.
+If $\Delta < \epsilon$ holds, the algorithm terminates and returns the approximation of $V$ from the last iteration, otherwise, it continues with the next iteration.
+
+\paragraph{Optimal strategies}
+After the approximation is returned, it can be used to extract the strategies of both players.
+It is sufficient to solve both linear programs LPSGMAX($u$), resp. LPSGMIN($u$), for each state $s$ with the returned value function $V$.
+This time, however, the values of variables $\strategy{1}(a_1)\;\forall a_1 \in A_1$, resp. $\strategy{2}(a_2)\;\forall a_2 \in A_2$, are used instead of the value of the game $v$.
+
+\subsubsection{Performance}\label{standard:sg:valueiter:performance}
+Even though the algorithm is very simple and provably converges to an equilibrium, it is not as efficient.
+As opposed to Markov decision processes, where the update is performed only as finding the currently best action (pure strategy) in each state, here we need to solve as many linear programs as states in the game.
+Moreover, this procedure is repeated until the desired precision is met.
+
+Linear programs can be solved in polynomial time, but the necessary number of them can grow rapidly, which makes Markov games more difficult to solve than Markov decision processes. 
+And while in stochastic games it is not a real issue, in the partially observable stochastic games this becomes a crucial cause of unscalability.
+
+In \refchap{new}, we propose other solution methods which do not require linear programs and compare them with the value iteration.
+
+\section{OS-POSGs}\label{standard:osposg}
+Methods to solve OS-POSGs combine the practices from \textit{stochastic games} together with \textit{partially observable Markov decision processes}.
+There exists an exact algorithm to solve this class of games, but similarly as in POMDPs, due to the dimension of the belief space it is practically intractable.
+Thus, an approximate approach is used to bypass this intractability and obtain at least a rough solution.
+
+\subsection{Value function}\label{standard:osposg:valfunc}
+The value of the game corresponds with the discounted utility which is guaranteed to the unobserving player 1 by playing against a best-responding opponent 1, when starting in the initial belief $b^{\text{init}}$.
+\begin{definition}
+    The optimal value function for an OS-POSG is a mapping $V^* : \Delta(S) \to \mathbb{R}$ assigning a real value to every belief point (a distribution over states) defined as follows \cite{poposgsthesis}
+    $$
+        V^*(b) = \sup_{\sigma_1 \in \Sigma_1} \inf_{\sigma_2 \in \Sigma_2} \mathbb{E}_{b, \sigma_1, \sigma_2} \text{Disc}^{\gamma},
+    $$
+    where $\text{Disc}^{\gamma}$ are the discounted rewards sum.
+\end{definition}
+In other words, it corresponds to the expected utility received by player 1 when starting in the initial belief $b \in \Delta(S)$ and both players employ their respective optimal behavioural strategies.
+
+Because the value function $V^*$ is defined as an expectation over a discounted sum with discount factor $0 < \gamma < 1$, which converges to a single value, it is bounded.
+Thus, we can define two values, the upper bound $U$ and lower bound $L$, for which holds $L \leq V^*(b) \leq U \, \forall b \in \Delta(S)$.
+The bounds are defined as
+\begin{align}
+    L &= \min_{s \in S, a_1 \in A_1, a_2 \in A_2} \frac{R(s, a_1, a_2)}{1 - \gamma} \\
+    U &= \max_{s \in S, a_1 \in A_1, a_2 \in A_2} \frac{R(s, a_1, a_2)}{1 - \gamma}
+\end{align}
+
+\subsubsection{$\alpha$-vectors}\label{standard:osposg:valfunc:alpha}
+Similarly to POMDPs, the belief state space is infinite and thus the value iteration technique for applying backup operators for each state as in MDPs or stochastic games cannot be used.
+Instead, we again use the notion of $\alpha$-vectors in the same fashion as in POMDPs.
+Since the value of a first player's strategy $\sigma_1$ is linear in $b \in \Delta(S)$, which is proven in \cite{poposgsthesis}, we can use linear functions $\alpha : \Delta(S) \to \mathbb{R}$ to represent them.
+Moreover, a linear function defined in this way can be characterized by the values in the vertices of the belief simplex so from now on we represent the $\alpha$-vector as values for each corner $s \in S$.
+The value of the $\alpha$-vector in a belief $b \in \Delta(S)$ is thus computed
+\begin{equation}
+    \alpha(b) = \sum_{s \in S} \alpha(s) \cdot b(s).
+\end{equation}
+Be reminded, that an $\alpha$-vector represents a $n$-th step plan, in this case a behavioural strategy.
+
+Because of this representation and the fact, that the optimal value function $V^*$ is convex and continuous, it can be approximated as a piecewise linear convex functions $V$.
+These are then created as a pointwise maximum
+\begin{equation}
+    V(b) = \max_{\alpha \in \Gamma} \alpha(b) \quad \forall b \in \Delta(S)
+\end{equation}
+where $\Gamma$ is a finite set of $\alpha$-vectors
+\begin{equation}
+    \Gamma \subset \left\{\alpha: \Delta(S) \to \mathbb{R} \mid \alpha \text{ is linear}\right\}.
+\end{equation}
+
+\subsubsection{Information sets}\label{standard:osposg:infoset}
+In many domains, the dimension of belief can be reduced by introducing the \textit{information sets}.
+We allow the player 1 to know his location in the environment but the position and actions of the opponent remain hidden to him.
+Thus, the space of space is split into partitions whose inner states are indistinguishable for the player 1, he knows only the current partition.
+This reduction of the size of the belief space helps to improve scalability and solve bigger instances, where applicable.
+
+\subsection{Exact algorithm}\label{standard:osposg:exact}
+As in previous problems, we use the iterative approach to obtain the optimal value function $V^*$, because finding the optimal value in a belief point exactly is a hard problem.
+The main idea is again to start from some initial approximation and repeatedly apply a backup operator on it to get a refined more accurate approximation.
+For this purpose serve the so-called \textit{Bellman operators} already known from the past sections.
+Here, we present the Bellman operator $[HV](b)$ for OS-POSGs as it was derived in \cite{poposgsthesis}.
+
+In short, the Bellman operator is a special strategy composition, where an optimal stage strategy $\pi_1$ of player 1 is sought to maximally improve the current value function by adding another step.
+\begin{definition}
+    Let $V: \Delta(S) \to \mathbb{R}$ be a convex continuous function and $\Gamma$ be a convex set of $\alpha$-vectors such as $V(b) = \sup_{\alpha \in \Gamma} \alpha(b) \quad \forall b \in \Delta(S)$.
+    Let $\tau$ be the \textit{belief update} as defined in \refdef{bg:osposg:model:belief:update}.
+    Then,
+    \begin{equation}
+        \begin{split}
+            \left[HV\right](b) &= \max_{\pi_1 \in \Pi_1} \min_{\pi_2 \in \Pi_2} \left[ \vphantom{\sum_{(a_1, o) \in A_1 \times O}} \mathbb{E}_{b, \pi_1, \pi_2}\left[R(s, a_1, a_2)\right] + \right. \\
+            & \left. + \gamma \sum_{(a_1, o) \in A_1 \times O}\mathbb{P}\left[a_1, o\right] V(\tau(b, \pi_2, a_1, o))\right]
+        \end{split}
+    \end{equation}
+\end{definition}
+Note that, thanks to the \textit{minimax} theorem, the $\max$ and $\min$ can be switched to form equivalent formulations \cite{minimax}.
+
+Similarly, as for Bellman operators for MDPs, POMDPs, etc., it can be proven, that it is a contraction \refdef{standard:mdp:valueiter:contraction} and thus converge to a unique fixed point, which is the optimal value function $V^*$.
+The equality $V^*(b) = \left[HV^*\right](b)$ holds $\forall b \in \Delta(S)$.
+Also, the operator does not depend on the set of $\alpha$-vectors $\Gamma$ and thus can be used for updates at any time and on arbitrarily initialized approximation.
+
+\subsubsection{Stage game}\label{standard:osposg:exact:stage}
+In stochastic games, applying the Bellman operator on the current approximation of the value function was equivalent to finding a Nash equilibria of a matrix game, called the \textit{stage game}.
+This applies to the OS-POSGs too, and the corresponding stage game is defined as listed in 
+\begin{definition}
+    A stage game with a value function $V$, which is convex and continuous, and a belief $b \in \Delta(S)$ is a two-player zero-sum game.
+    Let $\Pi_1$ be the strategy set of the maximizing player 1 and $\Pi_2$ of the minimizing player 2.
+    The utility function is then
+    \begin{equation}
+        u(\pi_1, \pi_2) = \mathbb{E}_{b, \pi_1, \pi_2}\left[R(s, a_1, a_2)\right] + \gamma\sum_{a_1, o}\mathbb{P}_{b, \pi_1, \pi_2}[a_1, o] \cdot V(\tau(b, \pi_2, a_1, o))
+    \end{equation}
+\end{definition}
+This game can be solved by a linear program thoroughly described in \cite{poposgsthesis} together with its dual formulation.
+We exclude it because it is not essential for the topic of this thesis as we will focus on the approximate HSVI algorithm.
+
+\subsubsection{Value iteration}\label{standard:osposg:exact:valit}
+The exact value iteration algorithm works similarly as the one mentioned in context of stochastic games.
+It starts from an initial piecewise linear and convex value function $V_0$ and then by iteratively solving stage games and creating new piecewise linear and convex value functions $V_i = HV_{i-1}$ the algorithm converges to the optimal $V^*$.
+
+It is known that the exact algorithm designed for POMDPs can solve only very small instances and since OS-POSGs are a more complex problem it can be estimated that this would hold also for this domain.
+Thus, we focus more on the non-exact Heuristic search value iteration described in the next section.
+
+\subsection{Heuristic search value iteration}\label{standard:osposg:hsvi}
+This approximate method is inspired by the algorithm for POMDPs with the same name and is described in \cite{osposgs}.
+It improves the scalability of the exact value iteration method while sacrificing precision of the found result.
+Here, we shortly describe the original algorithm from \cite{osposgs} and later in \refchap{new} we introduce a modification of this algorithm employing the multi-armed bandit framework.
+
+\subsubsection{Main idea}\label{standard:osposg:hsvi:idea}
+The basic concept of HSVI is keeping two value functions, lower bound $\lb$ and upper bound $ub$, which both bound the unknown optimal value function $V^*$.
+In other words, the inequality $\lb \leq V^* \leq \ub$ holds for every belief point $b \in \Delta(S)$.
+
+Then, in each step of the algorithm the bounds are improved until some desired precision in the initial belief $\binit$ is reached.
+The improvement lies in recursively solving stage games, reaching new belief points and using this information to create better stage strategies and thus finding better behavioural strategies.
+After some recursion depth, the search is restarted from the initial belief $\binit$.
+
+The precision is specified by $\epsilon \in \left(0, +\infty\right)$ forcing the value function $V(\binit)$ returned by the algorithm to be inside the $\epsilon$-neighbourhood around $V^*(\binit)$.
+
+\subsubsection{Lower and upper bound}\label{standard:osposg:hsvi:bounds}
+Both bounds are represented by finite sets of elements, from which can be constructed the corresponding piecewise linear convex value function.
+However, type of the elements are different for each bound.
+
+\textbf{Lower bound} $\lb : \Delta(S) \to \mathbb{R}$ is represented in the same way as discussed before in this section and as was used for lower bound in HSVI for POMDPs.
+That is by a set of $\alpha$-vectors denoted $\Gamma$ from which is selected a point-wise maximum as $\lb(b) = \max_{\alpha \in \Gamma}\alpha(b)$.
+More details on selecting the maximum is in \refsec{standard:osposg:valfunc:alpha}.
+To understand the initialization and point-based updates be reminded that $\alpha$-vector corresponds to a $n$-th step policy of an agent.
+
+The point-based update of the lower bound is performed by adding new $\alpha$-vectors into $\Gamma$.
+These are created from behavioural strategies prolonged by one stage strategy of the players.
+This way, when a strategy with higher value is found, the corresponding $\alpha$-vector is selected in the point-wise maximum over $\Gamma$.
+That pushes the lower bound $\lb$ upwards.
+
+Initialization of the lower bound $\lb$ is done in a very straightforward way and that is by creating an $\alpha$-vector corresponding to uniform strategy of the player, meaning that each action $a_1 \in A_1$ is played with probability $\frac{1}{|A_1|}$ and conversely for player 2.
+
+\textbf{Upper bound} $\ub : \Delta(S) \to \mathbb{R}$ is represented as a lower convex envelope of a set of points $\Upsilon = \left\{(b_i, y_i) \mid 1 \leq i \leq k, \, b_i \in \Delta(S), \, y_i \in \mathbb{R}\right\}$.
+Every $(b_i, y_i) \in \Upsilon$ bounds the optimal $V^*$ from above in the belief point $b_i$.
+In \cite{poposgsthesis} is shown, that this representation of the upper bound follows the requirements on convexity.
+The convex envelope can be also computed by linear programming.
+
+The refinement of the upper bound $\ub$ is again done by adding new points $(b, y)$ into the $\Upsilon$ set.
+The new point is retrieved by solving the stage game as well as in the case of lower bound, but this time with simpler linear program as composition of values is not necessary.
+Similarly, due to computing only the lower convex hull of the points, the value in a given belief point $b$ can only decrease and so the upper bound is pushed downwards.
+
+The initialization of the upper bound $\ub$ is more complex.
+The original OS-POSG game is transformed into a stochastic game by revealing all the information to the player 1 too.
+All the other parts remain the same as in the OS-POSG.
+Then, the value iteration algorithm can be used to compute the optimal values $V^*(s) \forall s \in S$, which then create one point $\left(b_s, V^*(s)\right)$, where $b_s$ is a pure belief in state $s \in S$.
+By removing the full information, the player surely cannot receive higher reward and so this is a good initial value function.
+
+From the above follows that by refining the bounds by point-based updates, the lower bound increases while the upper bound decreases and thus the gap gets tighter.
+
+\subsubsection{The algorithm}\label{standard:osposg:hsvi:alg}
+In this subsection, we present the HSVI algorithm \refalg{standard:osposg:hsvi:alg:alg} for OS-POSGs.
+The correctness and termination is described in \cite{poposgsthesis}, here we provide only a description on which we will build in next sections.
+\begin{algorithm}
+    \caption{HSVI algorithm for OS-POSGs}
+    \label{standard:osposg:hsvi:alg:alg}
+    \begin{algorithmic}[1]
+        \Require game $G$, initial belief $\binit$, precision requirement $\epsilon > 0$, discount factor $\gamma$, neighbouring parameter $D$
+        \Ensure bounds $\lb$ and $\ub$ satisfying $\ub(\binit) - \lb(\binit) \leq \epsilon$ and the corresponding sets $\Gamma$ and $\Upsilon$
+        \State initialize $\lb$ and $\ub$ \Comment{see \refsec{standard:osposg:hsvi:bounds}}
+        \While{$\text{excess}_0(\binit)$ > 0}
+            \State $\text{EXPLORE}(\binit, 0)$
+        \EndWhile
+        \State\Return $\lb$, $\ub$, $\Gamma$, $\Upsilon$
+        \Procedure{explore}{$b_t, t$}
+            \State $(\pi_1^{\text{LB}}, \pi_2^{\text{LB}})$ $\leftarrow$ strategies of the Nash equilibrium of $[H\lb](b_t)$
+            \State $(\pi_1^{\text{UB}}, \pi_2^{\text{UB}})$ $\leftarrow$ strategies of the Nash equilibrium of $[H\ub](b_t)$
+            \State point-based updates of $\lb$ and $\ub$ \Comment{see \refsec{standard:osposg:hsvi:bounds}}
+            \State $(a_1^*, o^*) \leftarrow $ select best pair according to the forward exploration heuristic
+            \If{$\mathbb{P}_{b, \pi_1^{\text{UB}}, \pi_2^{\text{LB}}}[a_1^*, o^*] \cdot \text{excess}_t(\tau(b_t, \pi_2^{\text{LB}}, a_1^*, o^*)) > 0$}
+                \State $\text{explore}(\tau(b_t, \pi_2^{\text{LB}}, a_1^*, o^*), t + 1)$
+                \State point-based updates of $\lb$ and $\ub$ \Comment{see \refsec{standard:osposg:hsvi:bounds}}
+            \EndIf
+        \EndProcedure
+    \end{algorithmic}
+\end{algorithm}
+
+After the initialization of the bounds \refsec{standard:osposg:hsvi:bounds}, the algorithm repeatedly calls procedure $\text{EXPLORE}(\binit, 0)$ until the \textit{excess gap} in $\binit$ is zero or below.
+The excess gap is computed as
+\begin{equation}
+    \text{excess}_t(b_t) = \ub(b_t) - \lb(b_t) - \rho(t).
+\end{equation}
+Hence, when the $\text{excess}_t$ is positive, the approximation error is bigger than the desired precision computed by $\rho(t)$ from $\epsilon$.
+The function $\rho: \mathbb{N} \to \mathbb{R}_+$ generates an increasing sequence starting from $\epsilon$ and thus allows for higher gap between the bounds as the given trial goes in farther stages of the game.
+The sequence $\rho$ is defined as
+\begin{equation}
+    \rho(0) = \epsilon \qquad \rho(t+1) = \frac{\rho(t) - 2\delta D}{\gamma},
+\end{equation}
+where $\delta = \frac{U - L}{2}$, $D$ is an arbitrary neighbouring constant satisfying $0 < D < \frac{(1 - \gamma)\epsilon}{2\delta}$ and $\gamma$ is the discount factor.
+Even though the gap in farther stages is allowed to be higher than $\epsilon$, in \cite{poposgsthesis} is shown, that the algorithm converges to the $\epsilon$ approximation in the initial belief, when the above conditions hold.
+Note that for the initial call of EXPLORE procedure, the $\text{excess}_0(\binit)$ is equivalent to a condition $\ub(\binit) - \lb(\binit) \leq \epsilon$.
+
+The $\text{EXPLORE}(\binit, 0)$ procedure recursively searches for behavioural strategies and one call of this procedure corresponds to a single trial of playing the game.
+The recursive call moves through a sequence of belief points starting from $\binit$ and for every one tries to improve the value bounds in the selected belief point $b_t$.
+
+First, it finds the stage strategies $(\pi_1, \pi_2)$, i.e. Nash equilibrium, of the stage game \refsec{standard:osposg:exact:stage} for both the upper and lower bounds in the belief $b_t$ of current recursive call resulting in two strategy profiles.
+With these stage strategies, the point-based update of both bounds is performed, i.e. a new $\alpha$-vector and a new point $(b_t, y)$ are added into their respective set $\Gamma$ or $\Upsilon$.
+
+After the update a new belief point $b_{t+1} = \tau(b_t, \pi_2, a_1^*, o^*)$ is derived as described in \refsec{bg:osposg:model:belief:update}.
+The pair $(a_1^*, o^*)$ is selected by a \textit{forward exploration heuristic}.
+\begin{equation}
+    (a_1^*, o^*) = \argmax_{(a_1, o) \in A_1 \times O} \mathbb{P}_{b, \pi_1^{\text{UB}}, \pi_2^{\text{LB}}}[a_1, o] \cdot \text{excess}_{t+1}(\tau(b_t, \pi_2^{\text{LB}}, a_1, o))
+\end{equation}
+This heuristic approach aims to find the best action and observation of the player 1, so that the next belief point has the biggest \textit{excess} gap between bounds and thus promises the biggest improvement.
+For this purpose serves the \textit{weighted excess gap}, where the excess in give belief point is multiplied by a probability of occurrence of the given pair $(a_1, o)$.
+
+If the $\text{excess}$ in the next belief given the $(a_1^*, o^*)$ is non-positive, the algorithm stops searching new stages and returns to the previous belief again performing point-based updates for the belief points with the new improved bounds.
+Otherwise, it proceeds to the next stage.
+
+If the gap between bounds in $\binit$ is wider than $\epsilon$ after emerging from the recursion, the search is repeated with a new game play trial.
+
+\subsubsection{Performance}
+Even though, the algorithm is proven to converge and is an improvement from the exact value iteration approach, it still uses linear programs which can become large and thus slow the algorithm down.
+In the \refsec{new:bhsvi} we propose the usage of multi-armed bandits as an alternative exploration method to avoid linear programming and possibly scale better for larger problems.
+
+\end{document}
